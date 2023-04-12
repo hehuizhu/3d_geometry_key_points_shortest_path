@@ -1,0 +1,35 @@
+# VTK
+set(VTK_DIR "E:/VTK/install/lib/cmake/vtk-9.1")
+find_package(VTK 9.1 REQUIRED)
+if(VTK_FOUND)
+	message(STATUS "VTK version : ${VTK_VERSION}" )
+else(VTK_FOUND)
+	message(FATAL_ERROR "Cant find VTK library.") 
+endif(VTK_FOUND)
+message(STATUS "------VTK_LIBRARIES: ${VTK_LIBRARIES}-------")
+
+# Function develop object
+add_executable(TestObject "vtk_example.cpp" )
+
+target_link_libraries(
+	TestObject 
+	PRIVATE	${VTK_LIBRARIES}
+			Eigen3::Eigen
+			pmp
+			nlohmann_json::nlohmann_json)
+
+add_executable(SP_Example "shortest_path_example.cpp") 
+
+target_link_libraries(SP_Example 
+PUBLIC ${VTK_LIBRARIES}
+		Eigen3::Eigen
+		SP_lib
+		pmp
+)
+
+vtk_module_autoinit( 
+	TARGETS TestObject SP_Example
+	MODULES ${VTK_LIBRARIES})
+	
+message(STATUS "Build develop object." )
+message(STATUS "---------------------" )	

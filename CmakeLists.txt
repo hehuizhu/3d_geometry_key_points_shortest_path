@@ -1,0 +1,116 @@
+# --------------------------------------------
+# ---------------- Pre-Define ----------------
+# --------------------------------------------
+
+cmake_minimum_required(VERSION 3.16.0)
+
+project("Short Path")
+
+# version define
+set(VERSION 1.0.0)
+set(CMAKE_CXX_STANDARD 17)
+
+# Path variable define
+set(SP_SOURCES_DIR "${PROJECT_SOURCE_DIR}/src/")
+set(SP_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include/")
+message(STATUS "***" ${SP_INCLUDE_DIR} "***")
+message(STATUS "********" ${SP_SOURCES_DIR} "*********")
+
+# ---------------- Options ------------------
+option(SP_BUILD_TEST "Build the SP examples" OFF)
+
+list(PREPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+if((UNIX OR APPLE) AND CMAKE_COMPILER_IS_GNUCXX)
+  set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wexta -Wno-deprecated-copy -fPIC")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "7.0.0")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-int-in-bool-context")
+  endif()
+endif()
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT EMSCRIPTEN)
+  set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Wno-unused-parameter")
+endif()
+
+if(WIN32)
+  set(CMAKE_CXX_FLAGS
+      "${CMAKE_CXX_FLAGS} -D_USE_MATH_DEFINES -DNOMINMAX -D_CRT_SECURE_NO_WARNINGS"
+  )
+  add_compile_options(/wd4267) # conversion from size_t
+  add_compile_options(/wd4244) # conversion from double to float
+  add_compile_options(/wd4305) # truncation from double to float
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+  message(STATUS "No build type specified. Using 'Release' as default.")
+  set(CMAKE_BUILD_TYPE
+      "Release"
+      CACHE
+        STRING
+        "The build type. Possible values: Debug Release RelWithDebInfo MinSizeRel."
+        FORCE)
+endif()
+
+# -------------------------------------------
+# ----------- Third Party Library -----------
+# -------------------------------------------
+message(STATUS "---------------" )	
+message(STATUS "Dependency :" )	
+
+# ---------------- Find PMP ----------------
+find_package(pmp REQUIRED)
+if(pmp_FOUND)
+	message(STATUS "pmp version:${pmp_VERSION}")
+else(pmp_FOUND)
+	message(FATAL_ERROR "Can't find pmp library")
+endif(pmp_FOUND)
+
+# ---------------- Find Eigen3 ----------------
+find_package(Eigen3 REQUIRED)
+if(Eigen3_FOUND)
+	message(STATUS "Eigen Version: ${Eigen3_VERSION}")
+else(Eigen3_FOUND)
+	message(FATAL_ERROR "Can't find Eigen library")
+endif(Eigen3_FOUND)
+message(STATUS "---------------" )	
+
+#------------------Find nlohmann_json-----------
+message(STATUS "---------------" )	
+find_package(nlohmann_json REQUIRED)
+if(nlohmann_json_FOUND)
+	message(STATUS "nlohmann_json version: ${nlohmann_json_VERSION}" "  nlohmann_json FOUND  ${nlohmann_json_FOUND}")
+else(nlohmann_json_FOUND)
+	message(FATAL_ERROR "Can't find nlohmann_json library")
+endif(nlohmann_json_FOUND)
+
+#------------------Find OpenMP-----------
+find_package(OpenMP REQUIRED)
+if(OpenMP_FOUND)
+	message(STATUS "OpenMP version: ${OpenMP_VERSION}")
+else(OpenMP_FOUND)
+	message(FATAL_ERROR "Can't find OpenMP library")
+endif(OpenMP_FOUND)
+
+message(STATUS "---------------" )	
+
+# -----------------------------------------
+# ------------- Add Libraries -------------
+# -----------------------------------------
+set(SP_SRC_FILES "src/shortest_path.cpp" "src/shortest_path_wrapper.cpp") 
+add_library(SP_lib "${SP_SRC_FILES}") # build link  --STATIC  SHARED
+
+#link to include of header files  
+target_include_directories(SP_lib PUBLIC ${SP_INCLUDE_DIR})
+
+target_link_libraries(SP_lib 
+	PUBLIC Eigen3::Eigen
+			pmp
+			nlohmann_json
+			)
+
+#---------------add_subdirectory---------------
+if(SP_BUILD_TEST)
+	add_subdirectory(${PROJECT_SOURCE_DIR}/examples)
+endif(SP_BUILD_TEST)
